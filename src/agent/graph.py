@@ -1,53 +1,26 @@
-"""LangGraph single-node graph template.
 
-Returns a predefined response. Replace logic and configuration as needed.
-"""
+from langgraph.prebuilt import create_react_agent
 
-from __future__ import annotations
+from src.env_config import set_env
+set_env()
 
-from dataclasses import dataclass
-from typing import Any, Dict, TypedDict
-
-from langgraph.graph import StateGraph
-from langgraph.runtime import Runtime
+from src.llm import llm
 
 
-class Context(TypedDict):
-    """Context parameters for the agent.
+def get_whether(city:str) -> str:
+    """模拟一个获取天气的函数"""
+    # 这里可以调用实际的天气API
+    return f"{city}的天气是晴天，25摄氏度"
 
-    Set these when creating assistants OR when invoking the graph.
-    See: https://langchain-ai.github.io/langgraph/cloud/how-tos/configuration_cloud/
-    """
+graph = create_react_agent(
+    llm,
+    tools = [
+        get_whether
+    ],
+    prompt="you are an assistant"
 
-    my_configurable_param: str
-
-
-@dataclass
-class State:
-    """Input state for the agent.
-
-    Defines the initial structure of incoming data.
-    See: https://langchain-ai.github.io/langgraph/concepts/low_level/#state
-    """
-
-    changeme: str = "example"
-
-
-async def call_model(state: State, runtime: Runtime[Context]) -> Dict[str, Any]:
-    """Process input and returns output.
-
-    Can use runtime context to alter behavior.
-    """
-    return {
-        "changeme": "output from call_model. "
-        f"Configured with {runtime.context.get('my_configurable_param')}"
-    }
-
-
-# Define the graph
-graph = (
-    StateGraph(State, context_schema=Context)
-    .add_node(call_model)
-    .add_edge("__start__", "call_model")
-    .compile(name="New Graph")
 )
+#
+# graph.invoke(
+#     {"message":"北京的天气怎么样？"}
+# )
