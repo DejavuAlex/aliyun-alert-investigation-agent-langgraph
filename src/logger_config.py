@@ -1,11 +1,16 @@
 import logging
 import os
 
-def get_logger(file_name: str) -> logging.Logger:
-    print(f"for {file_name},get the logger level is {os.getenv('LOG_LEVEL','INFO')}")
-    logging.basicConfig(
-        level=os.getenv("LOG_LEVEL", "INFO"),
-        format="%(asctime)s %(levelname)s %(name)s - %(message)s"
-    )
-    logger = logging.getLogger(file_name)
+def get_logger(name: str):
+    logger = logging.getLogger(name)
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        fmt = '%(asctime)s %(levelname)s %(name)s: %(message)s'
+        handler.setFormatter(logging.Formatter(fmt))
+        # Handler level should be lowest you want to see
+        handler.setLevel(logging.DEBUG)
+        logger.addHandler(handler)
+    # Logger level from env (default DEBUG)
+    logger.setLevel(os.getenv('LOG_LEVEL', 'INFO').upper())
+    logger.propagate = False
     return logger

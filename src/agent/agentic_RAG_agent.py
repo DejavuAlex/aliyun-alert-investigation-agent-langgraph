@@ -99,9 +99,7 @@ class AgenticRAGSystem:
                     docs = self.roche_rag_saas_client.search(self.collection_id,query)
                     if not docs:
                         return "未找到相关信息"
-
-                    context = "\n\n".join([doc.page_content for doc in docs])
-                    return f"检索到的相关信息：\n{context}"
+                    return f"检索到的相关信息：\n{docs}"
                 except Exception as e:
                     return f"检索错误：{str(e)}"
 

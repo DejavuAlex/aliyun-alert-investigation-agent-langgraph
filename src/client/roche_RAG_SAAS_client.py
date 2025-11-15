@@ -135,7 +135,7 @@ class Roche_RAG_SAAS_client:
             headers=self.headers)
         logger.debug(f"get the search_response code : {search_response.status_code}, get the search_response reason: {search_response.reason}")
         if search_response.status_code == 200 or search_response.status_code == 201 or search_response.status_code ==202:
-            results = search_response.json()['results']
+            results =  [result['text'] for result in search_response.json()['results']]
             logger.info(f"RAG SAAS search results retrieved successfully.")
             return results
         else:
@@ -177,9 +177,10 @@ class Roche_RAG_SAAS_client:
     """
     def list_collections(self) -> Union[list, None]:
         list_collections_url = f"{self.base_url}/develop/collections"
+        headers = self.headers | {'Content-Type': 'application/json'}
         list_collections_response = requests.get(
             url=list_collections_url,
-            headers=self.headers)
+            headers=headers)
         logger.debug(
             f"get the list_collections_response code : {list_collections_response.status_code}, get the list_collections_response reason: {list_collections_response.reason}")
 
