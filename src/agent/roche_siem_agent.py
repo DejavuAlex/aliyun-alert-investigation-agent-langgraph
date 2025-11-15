@@ -16,13 +16,7 @@ from src.env_config import set_env
 from src.llm import llm
 from functools import wraps
 set_env()
-
-# Configure logging (level can be overridden via LOG_LEVEL env)
-logging.basicConfig(
-    level=os.getenv("LOG_LEVEL", "INFO"),
-    format="%(asctime)s %(levelname)s %(name)s - %(message)s"
-)
-logger = logging.getLogger("roche_siem_agent")
+logger = logging.getLogger(__name__)
 
 def check_tool_name(tools: Iterable):
     """
@@ -104,7 +98,6 @@ def rate_limit_tool(func):
     return wrapper
 
 async def roche_SIEM_agent():
-    """ Access AliCloud ActionTrail via MCP server"""
     client = MultiServerMCPClient(
         {
             "roche_siem_server": StreamableHttpConnection(
@@ -122,13 +115,21 @@ async def roche_SIEM_agent():
 
     debug_tools("MCP", mcp_tools)
 
-    rag_tool = Tool(
+    rag_local_tool = AgenticRAGSystem().get_local_rag_tool()
+    rag_raas_tool = AgenticRAGSystem().get_RAAS_rag_tool()
+
+    rag_tool_local = Tool(
         name="Roche_knowledge_base",
         description="搜索罗氏相关的基础信息，比如罗氏的阿里云出口IP，罗氏拥有的域名等",
-        func=AgenticRAGSystem().get_rag_tool().func
+        func=rag_local_tool
+    )
+    rag_tool_roche = Tool(
+        name="Roche_SIEM_knowledge_search",
+        description="搜索安全知识库获取与阿里云网络安全事件调查相关的背景信息",
+        func=rag_raas_tool
     )
 
-    tools = mcp_tools + [rag_tool]
+    tools = mcp_tools + [rag_tool_roche, rag_tool_local]
 
     debug_tools("MERGED", tools)
     check_tool_name(tools)

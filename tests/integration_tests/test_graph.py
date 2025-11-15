@@ -45,7 +45,7 @@ def test_call_mpc_tools():
     asyncio.run(_test_call_mpc_tools())
 
 def test_rag_tool():
-   tools = AgenticRAGSystem("../../src/knowledge").get_rag_tool()
+   tools = AgenticRAGSystem("../../src/knowledge-deprecate").get_local_rag_tool()
    print(tools.name)
 
 
