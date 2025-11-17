@@ -243,8 +243,8 @@ class Roche_RAG_SAAS_client:
           ]
         }
     """
-    def list_indexed_files_in_collections(self):
-        files_url = f"{self.base_url}/files"
+    def list_indexed_files_in_collections(self,collection_id):
+        files_url = f"{self.base_url}/{collection_id}/files"
         files_response = requests.get(
             url=files_url,
             headers=self.headers)
