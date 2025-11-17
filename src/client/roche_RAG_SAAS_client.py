@@ -178,6 +178,7 @@ class Roche_RAG_SAAS_client:
     def list_collections(self) -> Union[list, None]:
         list_collections_url = f"{self.base_url}/develop/collections"
         headers = self.headers | {'Content-Type': 'application/json'}
+        headers.pop("x-portkey-api-key", None)
         list_collections_response = requests.get(
             url=list_collections_url,
             headers=headers)
@@ -218,3 +219,41 @@ class Roche_RAG_SAAS_client:
         else:
             logger.error(f"Failed to remove RAG SAAS collection {collection_id}: {remove_collection_response.text}")
             return False
+
+    """
+    得到各个collections里面已经indexed的文件列表
+    
+    {
+      'dataSources': [
+        {
+              'dataSourceName': 'collection_1',
+              's3Uri': 's3://mb-ragasaservicestack-mbgalileoragsharedresourcesm-urnkbqjcwp1j/30ed2a4341ed4623433866598923e3d0b2470c9a4a35c462799d3803bc1d6e71/upload/dataSource-1afa8c6f',
+              'files': [
+                'Wprowadzenie do uczenia g\u0142\u0119bokiego (1) (1).pdf'
+              ]
+            },
+            {
+              'dataSourceName': 'collection_1',
+              's3Uri': 's3://mb-ragasaservicestack-mbgalileoragsharedresourcesm-urnkbqjcwp1j/30ed2a4341ed4623433866598923e3d0b2470c9a4a35c462799d3803bc1d6e71/upload/dataSource-25171d78',
+              'files': [
+                'file_1.txt',
+                'file_2.txt'
+              ]
+            }
+          ]
+        }
+    """
+    def list_indexed_files_in_collections(self):
+        files_url = f"{self.base_url}/files"
+        files_response = requests.get(
+            url=files_url,
+            headers=self.headers)
+        logger.debug(
+            f"get the files_response code : {files_response.status_code}, get the files_response reason: {files_response.reason}")
+        if files_response.status_code == 200 or files_response.status_code == 202 or files_response.status_code == 202:
+            files = files_response.json().get('dataSources', [])
+            logger.info(f"RAG SAAS indexed files listed successfully.")
+            return files
+        else:
+            logger.error(f"Failed to list RAG SAAS indexed files: {files_response.text}")
+            return None
