@@ -176,7 +176,7 @@ class Roche_RAG_SAAS_client:
     
     """
     def list_collections(self) -> Union[list, None]:
-        list_collections_url = f"{self.base_url}/develop/collections"
+        list_collections_url = f"{self.base_url}/collections"
         headers = self.headers | {'Content-Type': 'application/json'}
         headers.pop("x-portkey-api-key", None)
         list_collections_response = requests.get(
