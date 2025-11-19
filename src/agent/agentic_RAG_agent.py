@@ -35,15 +35,15 @@ class AgenticRAGSystem:
         self.local_knowledge_retriever = None
         self.local_rag_enabled = self._initialize_local_rag()
 
-        self.roche_rag_saas_client = Roche_RAG_SAAS_client(
-            google_share_drive=os.getenv("GOOGLE_SHARE_DRIVE"),
-            embedding_model=os.getenv("LLM_EMBEDDING_MODEL"),
-            base_url=os.getenv("RAAS_BASE_URL"),
-            rass_api_key=os.getenv("RAAS_API_KEY"),
-            api_id=os.getenv("API_ID"),
-            portkey_api_key=os.getenv("LLM_API_KEY")
-        )
-        self.RAAS_enabled = self._initialize_RAAS()
+        # self.roche_rag_saas_client = Roche_RAG_SAAS_client(
+        #     google_share_drive=os.getenv("GOOGLE_SHARE_DRIVE"),
+        #     embedding_model=os.getenv("LLM_EMBEDDING_MODEL"),
+        #     base_url=os.getenv("RAAS_BASE_URL"),
+        #     rass_api_key=os.getenv("RAAS_API_KEY"),
+        #     api_id=os.getenv("API_ID"),
+        #     portkey_api_key=os.getenv("LLM_API_KEY")
+        # )
+        # self.RAAS_enabled = self._initialize_RAAS()
 
     def check_env_variables(self):
         required_vars = [
