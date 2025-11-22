@@ -5,7 +5,7 @@ from pathlib import Path
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader, DirectoryLoader, JSONLoader, UnstructuredMarkdownLoader
-from langchain.text_splitter import CharacterTextSplitter
+from langchain_text_splitters import CharacterTextSplitter
 from portkey_ai import Portkey, createHeaders
 
 from src.client.roche_RAG_SAAS_client import Roche_RAG_SAAS_client
@@ -91,7 +91,7 @@ class AgenticRAGSystem:
 
     def get_RAAS_rag_tool(self):
         """创建RAG工具"""
-        from langchain.tools import Tool
+        from langchain_core.tools import Tool
         if self.RAAS_enabled:
             def rag_search(query: str) -> str:
                 """使用RAG检索相关信息"""
@@ -168,7 +168,7 @@ class AgenticRAGSystem:
 
     def get_local_rag_tool(self):
         """创建RAG工具"""
-        from langchain.tools import Tool
+        from langchain_core.tools import Tool
         if self.local_knowledge_retriever is not None:
             def rag_search(query: str) -> str:
                 """使用RAG检索相关信息"""
@@ -203,7 +203,7 @@ class AgenticRAGSystem:
             metadata = {}
 
         # 创建新文档
-        from langchain.schema import Document
+        from langchain_core.documents import Document
         new_doc = Document(page_content=text, metadata=metadata)
 
         # 添加到向量存储

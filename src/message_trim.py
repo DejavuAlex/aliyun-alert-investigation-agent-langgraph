@@ -1,16 +1,15 @@
 import logging
 import os
 
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage, RemoveMessage
 from langchain_core.messages.utils import trim_messages,count_tokens_approximately
 from langgraph.graph.message import REMOVE_ALL_MESSAGES
-
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage, ToolMessage, RemoveMessage, BaseMessage
 from src.env_config import set_env
 set_env()
 
 from src.llm import llm
-logger = logging.getLogger(__file__)
-logger.setLevel(os.getenv("LOGGER_LEVEL") or "INFO")
+from fastmcp.utilities import logging
+logger = logging.get_logger(__name__)
 
 
 def monitor_message_trim_status(status,messages):
@@ -29,14 +28,15 @@ def monitor_message_trim_status(status,messages):
         elif type(message) is ToolMessage:
             logger.info("{},the {} of message: it is ToolMessage, the length is {}, the content(前200个字符) is {}\n".format(status,id,len(message.content),(message.content)[:200]))
         else:
-            logger.info("{},the {} of message: it is {}, the length is {}, the content is {}\n".format(status,id,type(message),len(message),message[:200]))
+            logger.info("{},the {} of message: it is {}, the length is {}, the content is {}\n".format(status,id,type(message),len(message.content),message.content[:200]))
 """
 method 1:  keep only latest messages until max_tokens is reached
 """
 def keep_latest_messages(state,max_tokens=int(os.getenv("LLM_MAX_TOKENS","260000"))):
     logger.info(f"Begin to trim messages to ensure not to reach the {max_tokens} tokens")
-
     messages = state["messages"]
+    for idx, m in enumerate(messages):
+        logger.debug(f"Incoming Message[{idx}] type={type(m).__name__}")
     monitor_message_trim_status("修剪前",messages)
     if messages and hasattr(messages[0], 'content') and isinstance(messages[0].content, str):
         system_message = messages[0]
@@ -57,9 +57,16 @@ def keep_latest_messages(state,max_tokens=int(os.getenv("LLM_MAX_TOKENS","260000
     monitor_message_trim_status("修剪后",trimmed_messages)
 
     # return {"llm_input_messages": trimmed_messages}
+    # return {
+    #         "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *trimmed_messages]
+    #     }
     return {
-            "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *trimmed_messages]
-        }
+        "messages": [RemoveMessage(id=REMOVE_ALL_MESSAGES), *trimmed_messages],
+        "llm_input_messages": [
+            m for m in trimmed_messages
+            if isinstance(m, (HumanMessage, SystemMessage, AIMessage, ToolMessage))
+        ]
+    }
 """
 method 2 : use LLM model to summarize old messages into fewer tokens
 """

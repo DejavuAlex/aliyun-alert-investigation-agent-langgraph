@@ -27,6 +27,6 @@ def set_env():
 
     # 调试输出
     print(f"[env] APP_ENV(raw)='{app_env}' normalized='{app_env_normalized}'")
-    print(f"[env] MCP_SERVER_ENDPOINT='{os.getenv('MCP_SERVER_ENDPOINT')}'")
+    # print(f"[env] MCP_SERVER_ENDPOINT='{os.getenv('MCP_SERVER_ENDPOINT')}'")
 
 
