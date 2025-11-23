@@ -1,3 +1,10 @@
+"""
+
+专门为运行 langgraph dev 调试用的
+在/src目录下运行
+langgraph dev --config ../langgraph.json
+
+"""
 import asyncio
 import os
 import json
