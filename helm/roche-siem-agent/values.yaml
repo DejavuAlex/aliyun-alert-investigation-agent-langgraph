@@ -1,0 +1,107 @@
+# Default values for security-mcp-server
+
+replicaCount: 1
+
+image:
+  repository: your-registry/roche-siem-agent
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets:
+  - name: imagepullsecret
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 8000
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: roche-siem-agent.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+livenessProbe:
+  enabled: false
+  path: /health
+  initialDelaySeconds: 10
+  periodSeconds: 15
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+readinessProbe:
+  enabled: false
+  path: /ready
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+  failureThreshold: 3
+
+env:
+  - name: LOG_LEVEL
+    value: info
+  - name: AGENT_TYPE
+    value: siem
+extraEnvFrom: []
+extraEnv: []
+
+config:
+  APP_MODE: production
+  ENABLE_FEATURE_X: "false"
+  APP_ROLE: "roche-siem-agent"
+
+secret:
+  enabled: true
+  data:
+    LOG_LEVEL: info
+    ALICLOUD_CONFIGS:
+      - account_id: "123456"
+        access_key_id: "sscaseoiwerw"
+        access_key_secret: "zvzxvsdfsfl"
+        region_id: "cn-shanghai"
+    JIHULAB_CONFIG:
+      url: "https://jihulab.com/api/v4"
+      token: "111"
+      roche_parent_group: "roche%2Fcommercial-innovation"
+    VIRUSTOTAL_CONFIG:
+      api_key: "111"
+  existingSecret: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+extraVolumes: []
+extraVolumeMounts: []
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 75

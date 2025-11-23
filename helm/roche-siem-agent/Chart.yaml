@@ -1,0 +1,18 @@
+# Helm chart definition for Roche SIEM Agent
+apiVersion: v2
+name: roche-siem-agent
+description: Helm chart for the Roche SIEM LangGraph Agent
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - security
+  - siem
+  - agent
+  - langgraph
+home: https://example.com/roche-siem-agent
+sources:
+  - https://example.com/roche-siem-agent/repo
+maintainers:
+  - name: haixiangren
+    email: haixiang.ren@roche.com

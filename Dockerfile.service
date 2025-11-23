@@ -1,0 +1,29 @@
+FROM artifact.roche.com.cn/common-dockerhub-docker-r/python:3.11-slim
+
+WORKDIR /app
+
+ENV UV_PROJECT_ENVIRONMENT="/usr/local/"
+ENV UV_COMPILE_BYTECODE=1
+
+# Use Aliyun Debian mirrors for faster apt operations
+RUN set -eux; \
+    . /etc/os-release; \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ ${VERSION_CODENAME} main contrib non-free non-free-firmware" > /etc/apt/sources.list; \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ ${VERSION_CODENAME}-updates main contrib non-free non-free-firmware" >> /etc/apt/sources.list; \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian/ ${VERSION_CODENAME}-backports main contrib non-free non-free-firmware" >> /etc/apt/sources.list; \
+    echo "deb https://mirrors.tuna.tsinghua.edu.cn/debian-security ${VERSION_CODENAME}-security main contrib non-free non-free-firmware" >> /etc/apt/sources.list; \
+    apt-get update && \
+    apt-get install -y --no-install-recommends build-essential python3-dev curl && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+
+COPY pyproject.toml .
+
+RUN pip install --no-cache-dir uv -i https://pypi.tuna.tsinghua.edu.cn/simple
+RUN uv sync --no-install-project --no-dev
+
+COPY .env ./.env
+COPY src ./src
+COPY src/run_service.py .
+
+CMD ["python", "src/run_service.py"]

@@ -3,6 +3,7 @@ import inspect
 import json
 import os
 import warnings
+from aifc import Error
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
@@ -15,6 +16,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from langchain_core._api import LangChainBetaWarning
 from langchain_core.messages import AIMessage, AIMessageChunk, AnyMessage, HumanMessage, ToolMessage
 from langchain_core.runnables import RunnableConfig
+from langchain_core.tools import ToolException
 from langfuse import Langfuse  # type: ignore[import-untyped]
 from langfuse.langchain import (
     CallbackHandler,  # type: ignore[import-untyped]
@@ -345,9 +347,20 @@ async def message_generator(
                 yield f"data: {json.dumps({'type': 'error', 'content': 'Tool argument error'})}\n\n"
         else:
             yield f"data: {json.dumps({'type': 'error', 'content': 'Validation error'})}\n\n"
-
+    # for run command in ECS error
+    # Error calling tool 'describe_invocation_results': Failed to describe invocation results: 命令执行失败，退出码: 2，错误: The command execution exit code is not zero.
+    except ToolException as e:
+        logger.error(f"Tool execution error: {e}")
+        if "Failed to describe invocation results: 命令执行失败，退出码: 2" in e:
+            ai_msg = AIMessage(content=f"Tool execution failed: {e}")
+            try:
+                chat_message = langchain_to_chat_message(ai_msg)
+                chat_message.run_id = str(run_id)
+                yield f"data: {json.dumps({'type': 'message', 'content': chat_message.model_dump()})}\n\n"
+            except Exception:
+                yield f"data: {json.dumps({'type': 'error', 'content': 'Tool execution failed'})}\n\n"
     except Exception as e:
-        logger.error(f"Error in message generator: {e}")
+        logger.error(f"Error in message generator: {e}, the error type is {type(e)}")
         yield f"data: {json.dumps({'type': 'error', 'content': 'Internal server error'})}\n\n"
     finally:
         yield "data: [DONE]\n\n"
