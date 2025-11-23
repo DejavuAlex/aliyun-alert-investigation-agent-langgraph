@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import os
 import json
 from typing import Iterable
@@ -10,13 +9,13 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import StreamableHttpConnection
 from langchain.agents.middleware.summarization import SummarizationMiddleware
 from asyncio_throttle import Throttler
-from src.agent.agentic_RAG_agent import AgenticRAGSystem
-from src.message_trim import keep_latest_messages
-from src.env_config import set_env
-from src.llm import llm
+from log_config import get_logger
+from agent.agentic_RAG_agent import AgenticRAGSystem
+from env_config import set_env
+from llm import llm
 from functools import wraps
 set_env()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 def check_tool_name(tools: Iterable):
     """
@@ -171,8 +170,8 @@ recursion_limit = 100
     #         pre_model_hook=keep_latest_messages,
     #     ).with_config(recursion_limit=recursion_limit)
 
-async def build_roche_siem_agent():
-    tools = await roche_SIEM_agent()
+def build_roche_siem_agent():
+    tools = asyncio.run(roche_SIEM_agent())
     agent = create_agent(
         checkpointer=None,
         model=llm,
@@ -206,3 +205,5 @@ async def build_roche_siem_agent():
         ],
     ).with_config(recursion_limit=recursion_limit)
     return agent
+
+roche_siem_agent_graph = build_roche_siem_agent()

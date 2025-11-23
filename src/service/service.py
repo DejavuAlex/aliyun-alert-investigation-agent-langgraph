@@ -1,7 +1,6 @@
 
 import inspect
 import json
-import logging
 import os
 import warnings
 from collections.abc import AsyncGenerator
@@ -22,10 +21,12 @@ from langfuse.langchain import (
 )
 from langgraph.types import Command, Interrupt
 from langsmith import Client as LangsmithClient
+from pydantic import ValidationError
 
 from agent.agents import DEFAULT_AGENT, AgentGraph, get_agent, get_all_agent_info, load_agent
+from log_config import get_logger
 from memory import initialize_database, initialize_store
-from schema.models import AVAILABLE_MODELS, DEFAULT_MODEL, OpenAIModelName
+from schema.models import AVAILABLE_MODELS, DEFAULT_MODEL
 from schema.schema import (
     ChatHistory,
     ChatHistoryInput,
@@ -43,7 +44,7 @@ from service.utils import (
 )
 
 warnings.filterwarnings("ignore", category=LangChainBetaWarning)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -131,8 +132,12 @@ async def _handle_input(user_input: UserInput, agent: AgentGraph) -> tuple[dict[
         configurable["model"] = user_input.model
 
     callbacks: list[Any] = []
-    if os.getenv("LANGFUSE_TRACING"):
+    logger.debug("in handle input, get the langfuse tracing status is %s", os.getenv("LANGFUSE_TRACING"))
+    if os.getenv("LANGFUSE_TRACING").lower() == "true":
+        logger.info("Now set up Langfuse tracing callback handler...")
         # Initialize Langfuse CallbackHandler for Langchain (tracing)
+        os.environ["OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"] = os.path.dirname(
+            os.path.abspath(__file__)) + "/server_certificate.crt"
         langfuse_handler = CallbackHandler()
 
         callbacks.append(langfuse_handler)
@@ -321,6 +326,26 @@ async def message_generator(
                     # that the model is asking for a tool to be invoked.
                     # So we only print non-empty content.
                     yield f"data: {json.dumps({'type': 'token', 'content': convert_message_content_to_string(content)})}\n\n"
+    except ValidationError as e:
+        # Handle unexpected keyword argument without interrupting service
+        unexpected = [
+            err for err in e.errors() if err.get("type") == "unexpected_keyword_argument"
+        ]
+        if unexpected:
+            bad_values = [err.get("input") for err in unexpected]
+            detail = ", ".join(bad_values)
+            ai_msg = AIMessage(
+                content=f"Tool invocation error: unexpected keyword argument(s): {detail}. Remove unsupported field(s) and retry."
+            )
+            try:
+                chat_message = langchain_to_chat_message(ai_msg)
+                chat_message.run_id = str(run_id)
+                yield f"data: {json.dumps({'type': 'message', 'content': chat_message.model_dump()})}\n\n"
+            except Exception:
+                yield f"data: {json.dumps({'type': 'error', 'content': 'Tool argument error'})}\n\n"
+        else:
+            yield f"data: {json.dumps({'type': 'error', 'content': 'Validation error'})}\n\n"
+
     except Exception as e:
         logger.error(f"Error in message generator: {e}")
         yield f"data: {json.dumps({'type': 'error', 'content': 'Internal server error'})}\n\n"
@@ -415,13 +440,16 @@ async def history(input: ChatHistoryInput) -> ChatHistory:
 @app.get("/health")
 async def health_check():
     """Health check endpoint."""
-
+    logger.info("Now health check...")
     health_status = {"status": "ok"}
-
-    if os.getenv("LANGFUSE_TRACING"):
+    logger.debug("get the langfuse tracing status is %s", os.getenv("LANGFUSE_TRACING"))
+    if os.getenv("LANGFUSE_TRACING").lower() == "true":
         try:
+            # under roche globalprotect vpn testing env, export OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE to env to configure the roche ssl intercept cert
+            os.environ["OTEL_EXPORTER_OTLP_TRACES_CERTIFICATE"] = os.path.dirname(os.path.abspath(__file__)) + "/server_certificate.crt"
             langfuse = Langfuse()
             health_status["langfuse"] = "connected" if langfuse.auth_check() else "disconnected"
+            logger.info("Langfuse connection successful.")
         except Exception as e:
             logger.error(f"Langfuse connection error: {e}")
             health_status["langfuse"] = "disconnected"

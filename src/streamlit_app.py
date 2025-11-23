@@ -22,8 +22,9 @@ from schema.task_data import TaskData, TaskDataStatus
 # The app heavily uses AgentClient to interact with the agent's FastAPI endpoints.
 
 
-APP_TITLE = "Agent Service Toolkit"
-APP_ICON = "🧰"
+APP_TITLE = "Roche SIEM Agent"
+# APP_ICON = "🧰"
+APP_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "roche.ico")
 USER_ID_COOKIE = "user_id"
 
 
@@ -79,7 +80,6 @@ async def main() -> None:
     user_id = get_or_create_user_id()
 
     if "agent_client" not in st.session_state:
-        set_env()
         agent_url = os.getenv("AGENT_URL")
         if not agent_url:
             host = os.getenv("HOST", "0.0.0.0")
@@ -110,10 +110,14 @@ async def main() -> None:
 
     # Config options
     with st.sidebar:
-        st.header(f"{APP_ICON} {APP_TITLE}")
-
+        # st.header(f"{APP_ICON} {APP_TITLE}")
+        col_icon, col_title = st.columns([1, 4])
+        with col_icon:
+            st.image(APP_ICON, width=128)
+        with col_title:
+            st.header(APP_TITLE)
         ""
-        "Full toolkit for running an AI agent service built with LangGraph, FastAPI and Streamlit"
+        "Roche SIEM Agent is an AI-powered assistant designed to help investigate security events."
         ""
 
         if st.button(":material/chat: New Chat", use_container_width=True):
@@ -173,10 +177,10 @@ async def main() -> None:
         if st.button(":material/upload: Share/resume chat", use_container_width=True):
             share_chat_dialog()
 
-        "[View the source code](https://github.com/JoshuaC215/agent-service-toolkit)"
-        st.caption(
-            "Made with :material/favorite: by [Joshua](https://www.linkedin.com/in/joshua-k-carroll/) in Oakland"
-        )
+        # "[View the source code](https://github.com/JoshuaC215/agent-service-toolkit)"
+        # st.caption(
+        #     "Made with :material/favorite: by [Joshua](https://www.linkedin.com/in/joshua-k-carroll/) in Oakland"
+        # )
 
     # Draw existing messages
     messages: list[ChatMessage] = st.session_state.messages
@@ -514,4 +518,5 @@ async def handle_sub_agent_msgs(messages_agen, status, is_new):
 
 
 if __name__ == "__main__":
+    set_env()
     asyncio.run(main())

@@ -1,31 +1,69 @@
 """GitHub MCP Agent - An agent that uses GitHub MCP tools for repository management."""
 import asyncio
 import json
-import logging
 import os
-from datetime import datetime
 from functools import wraps
-from typing import Iterable
+from typing import Iterable, Any
 
 from asyncio_throttle import Throttler
-from langchain.agents import create_agent
+from langchain.agents import create_agent, AgentState
 from langchain.agents.middleware import SummarizationMiddleware
+from langchain_core.messages import RemoveMessage
 from langchain_core.messages.utils import count_tokens_approximately
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.sessions import StreamableHttpConnection
+from langgraph.graph.message import REMOVE_ALL_MESSAGES
 from langgraph.graph.state import CompiledStateGraph
+from langgraph.runtime import Runtime
 
 from agent.agentic_RAG_agent import AgenticRAGSystem
 from agent.lazy_agent import LazyLoadingAgent
+from env_config import set_env
 from llm import get_model
 
 from log_config import get_logger
-from schema.models import AllModelEnum, OpenAIModelName
-
+from schema.models import  OpenAIModelName
 logger = get_logger(__name__)
+set_env()
 
-current_date = datetime.now().strftime("%B %d, %Y")
+class LoggingSummarizationMiddleware(SummarizationMiddleware):
+    def before_model(self, state: AgentState, runtime: Runtime) -> dict[str, Any] | None:  # noqa: ARG002
+        """Process messages before model invocation, potentially triggering summarization."""
+        messages = state["messages"]
+        self._ensure_message_ids(messages)
+
+        total_tokens = self.token_counter(messages)
+        logger.debug(f"before input model, get the total tokens: {total_tokens}")
+        if (
+                self.max_tokens_before_summary is not None
+                and total_tokens < self.max_tokens_before_summary
+        ):
+            logger.debug(f"the total tokens {total_tokens} < hit_tokens_threshold_must_summary {self.max_tokens_before_summary}, so no need to summarize")
+            return None
+        else:
+            logger.debug(f"the total tokens {total_tokens} > hit_tokens_threshold_must_summary {self.max_tokens_before_summary}, so have to summarize")
+
+        cutoff_index = self._find_safe_cutoff(messages)
+
+        if cutoff_index <= 0:
+            logger.debug("for summarization, can not find appropriate cutoff_index, so skip summarization")
+            return None
+
+        messages_to_summarize, preserved_messages = self._partition_messages(messages, cutoff_index)
+
+        summary = self._create_summary(messages_to_summarize)
+        logger.debug(f"after summary, get the result is: {summary}")
+        new_messages = self._build_new_messages(summary)
+
+        return {
+            "messages": [
+                RemoveMessage(id=REMOVE_ALL_MESSAGES),
+                *new_messages,
+                *preserved_messages,
+            ]
+        }
+
 prompt = """
         你既是安全分析专家也是DevOps专家，具有以下能力：
             安全分析能力：
@@ -133,7 +171,7 @@ class RocheSIEMAgent(LazyLoadingAgent):
 
         return wrapper
 
-    async def get_roche_SIEM_agent_tools(self) -> list[BaseTool]:
+    async def _get_roche_SIEM_agent_tools(self) -> list[BaseTool]:
         """Fetch and combine tools from MCP and custom RAG tools."""
         client = MultiServerMCPClient(
             {
@@ -184,7 +222,7 @@ class RocheSIEMAgent(LazyLoadingAgent):
         """Initialize the Roche SIEM agent"""
         try:
             # Get tools from the client
-            self._mcp_tools = await self.get_roche_SIEM_agent_tools()
+            self._mcp_tools = await self._get_roche_SIEM_agent_tools()
             logger.info(f"Roche SIEM agent initialized with {len(self._mcp_tools)} tools")
 
         except Exception as e:
@@ -193,7 +231,7 @@ class RocheSIEMAgent(LazyLoadingAgent):
             self._mcp_client = None
 
         # Create and store the graph
-        self._graph = self._create_graph()
+        self.graph = self._create_graph()
         self._loaded = True
 
     def _create_graph(self) -> CompiledStateGraph:
@@ -207,10 +245,10 @@ class RocheSIEMAgent(LazyLoadingAgent):
             name="roche-siem-agent",
             system_prompt=prompt,
             middleware=[
-                SummarizationMiddleware(
+                LoggingSummarizationMiddleware(
                     model,
-                    max_tokens_before_summary=200000,
-                    summary_prompt="总结一下到目前为止的对话内容，突出重点信息，简洁明了。",
+                    max_tokens_before_summary=150000,
+                    summary_prompt="总结一下到目前为止的网络安全调查结果",
                     token_counter=count_tokens_approximately
                 )
             ],

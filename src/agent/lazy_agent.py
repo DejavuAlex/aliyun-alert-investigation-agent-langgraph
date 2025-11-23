@@ -12,7 +12,7 @@ class LazyLoadingAgent(ABC):
     def __init__(self) -> None:
         """Initialize the agent."""
         self._loaded = False
-        self._graph: CompiledStateGraph | Pregel | None = None
+        self.graph: CompiledStateGraph | Pregel | None = None
 
     @abstractmethod
     async def load(self) -> None:
@@ -38,6 +38,6 @@ class LazyLoadingAgent(ABC):
         """
         if not self._loaded:
             raise RuntimeError("Agent not loaded. Call load() first.")
-        if self._graph is None:
+        if self.graph is None:
             raise RuntimeError("Agent graph not created during load().")
-        return self._graph
+        return self.graph

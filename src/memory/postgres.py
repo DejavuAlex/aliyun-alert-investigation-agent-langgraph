@@ -1,4 +1,3 @@
-import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -9,25 +8,28 @@ from psycopg_pool import AsyncConnectionPool
 
 from log_config import get_logger
 
-logger = get_logger(__name__,)
+logger = get_logger(__name__)
 
 
 def get_postgres_connection_string() -> str:
     """Build and return the PostgreSQL connection string from settings."""
     if os.getenv("POSTGRES_PASSWORD") is None:
         raise ValueError("POSTGRES_PASSWORD is not set")
-    return "postgresql://{}:{}@{}:{}/{}".format(
+    db_str = "postgresql://{}:{}@{}:{}/{}".format(
         os.getenv("POSTGRES_USER"),
         os.getenv("POSTGRES_PASSWORD"),
         os.getenv("POSTGRES_HOST"),
         os.getenv("POSTGRES_PORT"),
         os.getenv("POSTGRES_DB"),
     )
+    logger.debug("PostgreSQL connection string: {}".format(db_str))
+    return db_str
 
 
 @asynccontextmanager
 async def get_postgres_saver():
     """Initialize and return a PostgreSQL saver instance based on a connection pool for more resilent connections."""
+    logger.info("set up database saver based on a connection pool...")
     if os.getenv("POSTGRES_APPLICATION_NAME") and os.getenv("POSTGRES_MIN_CONNECTIONS_PER_POOL") and os.getenv("POSTGRES_MAX_CONNECTIONS_PER_POOL"):
         application_name = os.getenv("POSTGRES_APPLICATION_NAME") + "-" + "saver"
     else:
@@ -59,6 +61,7 @@ async def get_postgres_store():
     Returns an AsyncPostgresStore instance that can be used with async context manager pattern.
 
     """
+    logger.info("set up database store based on a connection pool...")
     if os.getenv("POSTGRES_APPLICATION_NAME") and os.getenv("POSTGRES_MIN_CONNECTIONS_PER_POOL") and os.getenv("POSTGRES_MAX_CONNECTIONS_PER_POOL"):
         application_name = os.getenv("POSTGRES_APPLICATION_NAME") + "-" + "store"
     else:

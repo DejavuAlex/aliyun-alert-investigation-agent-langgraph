@@ -167,3 +167,4 @@ uv.lock
 .langgraph_api/
 **/app.log
 **/app.log.*
+.idea

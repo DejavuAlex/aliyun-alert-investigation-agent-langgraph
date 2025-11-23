@@ -2,7 +2,7 @@
   "$schema": "https://langgra.ph/schema.json",
   "dependencies": ["."],
   "graphs": {
-    "roche_siem_agent": "./src/agent/roche_siem_agent.py:roche_siem_agent"
+    "roche_siem_agent": "./agent/roche-siem-agent-for-langgraph-run.py:roche_siem_agent_graph"
   },
   "env": ".env",
   "image_distro": "wolfi"

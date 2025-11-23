@@ -8,8 +8,7 @@ from langchain_community.document_loaders import TextLoader, DirectoryLoader, JS
 from langchain_text_splitters import CharacterTextSplitter
 from portkey_ai import Portkey, createHeaders
 
-from src.client.roche_RAG_SAAS_client import Roche_RAG_SAAS_client
-from src.env_config import set_env
+from env_config import set_env
 set_env()
 
 logger = logging.getLogger(__name__)
