@@ -38,7 +38,8 @@ dependencies = [
     "langfuse==3.10.1",
     "langgraph-runtime-inmem==0.18.0",
     "langgraph-sdk==0.2.9",
-    "langsmith==0.3.45"
+    "langsmith==0.3.45",
+    "langgraph-prebuilt==1.0.5",
 
 ]
 
