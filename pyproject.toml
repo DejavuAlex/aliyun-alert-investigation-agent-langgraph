@@ -28,7 +28,7 @@ dependencies = [
     "langchain-mcp-adapters>=0.1.13",
     "langchain-community>=0.2.0",
     "langfuse>=2.65.0",
-    "langgraph-checkpoint-postgres==2.0.25",
+    "langgraph-checkpoint-postgres",
     "langgraph-checkpoint==3.0.1",
     "langchain==1.0.7",
     "langchain-anthropic==1.1.0",
