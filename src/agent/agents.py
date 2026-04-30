@@ -5,7 +5,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.pregel import Pregel
 
 from agent.lazy_agent import LazyLoadingAgent
-from agent.roche_siem_agent import roche_siem_agent
+from agent.eccom_siem_agent import eccom_siem_agent
 from schema.schema import AgentInfo
 # Type alias to handle LangGraph's different agent patterns
 # - @entrypoint functions return Pregel
@@ -13,7 +13,7 @@ from schema.schema import AgentInfo
 AgentGraph = CompiledStateGraph | Pregel  # What get_agent() returns (always loaded)
 AgentGraphLike = CompiledStateGraph | Pregel | LazyLoadingAgent   # What can be stored in registry
 
-DEFAULT_AGENT = "roche-siem-agent"
+DEFAULT_AGENT = "eccom-siem-agent"
 
 @dataclass
 class Agent:
@@ -22,7 +22,7 @@ class Agent:
 
 
 agents: dict[str, Agent] = {
-    "roche-siem-agent": Agent(description="Roche SIEM Agent chatbot.", graph_like=roche_siem_agent),
+    "eccom-siem-agent": Agent(description="eccom SIEM Agent chatbot.", graph_like=eccom_siem_agent),
 }
 
 

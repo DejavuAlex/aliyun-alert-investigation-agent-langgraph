@@ -4,17 +4,15 @@ import time
 import hashlib
 from pathlib import Path
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+from langchain_community.embeddings import DashScopeEmbeddings
 from langchain_community.document_loaders import TextLoader, DirectoryLoader, JSONLoader, UnstructuredMarkdownLoader
 from langchain_text_splitters import CharacterTextSplitter
-from portkey_ai import Portkey, createHeaders
-
 from env_config import set_env
 set_env()
 
 logger = logging.getLogger(__name__)
 """
-The agent will be wrapped as a tool combined roche SIEM agent tools to use
+The agent will be wrapped as a tool combined eccom SIEM agent tools to use
 
 """
 class AgenticRAGSystem:
@@ -24,18 +22,15 @@ class AgenticRAGSystem:
         knowledge_path = Path(__file__).parent.parent.resolve()/"knowledge"
         print("The knowledge base path is {}".format(knowledge_path))
         self.local_knowledge_base_path = local_knowledge_base_path
-        portkey_headers = createHeaders(api_key=os.getenv("LLM_API_KEY"),provider="azure-openai")
-        self.embeddings =OpenAIEmbeddings(
-            api_key=os.getenv("LLM_API_KEY"),
-            base_url=os.getenv("LLM_BASE_URL"),
-            model=os.getenv("LLM_EMBEDDING_MODEL"),
-            default_headers=portkey_headers
+        self.embeddings = DashScopeEmbeddings(
+            dashscope_api_key=os.getenv("LLM_API_KEY"),
+            model=os.getenv("LLM_EMBEDDING_MODEL")
         )
         self.local_knowledge_vector_store = None
         self.local_knowledge_retriever = None
         self.local_rag_enabled = self._initialize_local_rag()
 
-        # self.roche_rag_saas_client = Roche_RAG_SAAS_client(
+        # self.eccom_rag_saas_client = eccom_RAG_SAAS_client(
         #     google_share_drive=os.getenv("GOOGLE_SHARE_DRIVE"),
         #     embedding_model=os.getenv("LLM_EMBEDDING_MODEL"),
         #     base_url=os.getenv("RAAS_BASE_URL"),
@@ -59,10 +54,10 @@ class AgenticRAGSystem:
         if missing_vars:
             raise EnvironmentError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
-    # initialize ROCHE RAG SAAS
+    # initialize eccom RAG SAAS
     def _initialize_RAAS(self) -> bool:
         # 创建RAG SAAS集合
-        collection_id = self.roche_rag_saas_client.create_collection()
+        collection_id = self.eccom_rag_saas_client.create_collection()
         if collection_id:
             logger.info(f"RAG SAAS collection created with ID: {collection_id}")
             self.collection_id = collection_id
@@ -72,7 +67,7 @@ class AgenticRAGSystem:
             poll_interval = 2
 
             while True:
-                if self.roche_rag_saas_client.retrieve_collection_status(self.collection_id):
+                if self.eccom_rag_saas_client.retrieve_collection_status(self.collection_id):
                     logger.info(f"RAG SAAS collection {self.collection_id} is active.")
                     return True
                 if time.time() - start_time >= timeout_seconds:
@@ -87,8 +82,6 @@ class AgenticRAGSystem:
             return False
 
 
-
-
     def get_RAAS_rag_tool(self):
         """创建RAG工具"""
         from langchain_core.tools import Tool
@@ -96,7 +89,7 @@ class AgenticRAGSystem:
             def rag_search(query: str) -> str:
                 """使用RAG检索相关信息"""
                 try:
-                    docs = self.roche_rag_saas_client.search(self.collection_id,query)
+                    docs = self.eccom_rag_saas_client.search(self.collection_id,query)
                     if not docs:
                         return "未找到相关信息"
                     return f"检索到的相关信息：\n{docs}"
@@ -111,10 +104,10 @@ class AgenticRAGSystem:
         else:
             logger.warning("RAAS RAG tool requested but RAAS is not enabled.")
             def rag_search_unavailable(query: str) -> str:
-                return "ROCHE RAG SAAS知识库未初始化，无法进行检索。"
+                return "eccom RAG SAAS知识库未初始化，无法进行检索。"
             return Tool(
                 name="RAAS_knowledge_search_unavailable",
-                description="ROCHE RAG SAAS知识库未初始化，无法进行检索。",
+                description="eccom RAG SAAS知识库未初始化，无法进行检索。",
                 func=rag_search_unavailable
             )
 
@@ -169,11 +162,12 @@ class AgenticRAGSystem:
 
             # 仅分割 chunkable 文档
             text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
-            chunked_docs = text_splitter.split_documents(chunkable_documents)
+            all_documents = chunkable_documents + shell_documents
 
             # 合并：分割后的普通文档 + 原样的 .sh 脚本文档
-            all_docs = chunked_docs + shell_documents
-
+            all_docs = text_splitter.split_documents(all_documents)
+            # 过滤掉空文档或过短的文档
+            all_docs = [doc for doc in all_docs if len(doc.page_content.strip()) > 0 and len(doc.page_content.strip()) <= 2048]
             # 创建向量存储
             self.local_knowledge_vector_store = FAISS.from_documents(all_docs, self.embeddings)
             self.local_knowledge_retriever = self.local_knowledge_vector_store.as_retriever(

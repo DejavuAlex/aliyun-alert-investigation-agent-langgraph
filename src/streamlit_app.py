@@ -22,9 +22,9 @@ from schema.task_data import TaskData, TaskDataStatus
 # The app heavily uses AgentClient to interact with the agent's FastAPI endpoints.
 
 
-APP_TITLE = "Roche SIEM Agent"
+APP_TITLE = "SIEM Agent"
 # APP_ICON = "🧰"
-APP_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "roche.ico")
+APP_ICON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "eccom.ico")
 USER_ID_COOKIE = "user_id"
 
 
@@ -117,7 +117,7 @@ async def main() -> None:
         with col_title:
             st.header(APP_TITLE)
         ""
-        "Roche SIEM Agent is an AI-powered assistant designed to help investigate security events."
+        "This is an AI-powered assistant designed to help investigate security events."
         ""
 
         if st.button(":material/chat: New Chat", use_container_width=True):

@@ -59,3 +59,16 @@ For more advanced features and examples, refer to the [LangGraph documentation](
 
 LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates, allowing you to analyze and optimize your chatbot's performance.
 
+### 启动
+
+Podman启动postgresql
+
+pyenv activate mcp-server --- MCP环境
+cd ai
+python main.py
+
+pyenv activate langgraph --- langgraph环境
+cd eccom
+python src/run_service.py
+streamlit run src/streamlit_app.py
+

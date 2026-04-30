@@ -351,8 +351,9 @@ async def message_generator(
     # Error calling tool 'describe_invocation_results': Failed to describe invocation results: 命令执行失败，退出码: 2，错误: The command execution exit code is not zero.
     except ToolException as e:
         logger.error(f"Tool execution error: {e}")
-        if "Failed to describe invocation results: 命令执行失败，退出码: 2" in e:
-            ai_msg = AIMessage(content=f"Tool execution failed: {e}")
+        error_str = str(e)
+        if "Failed to describe invocation results: 命令执行失败，退出码: 2" in error_str:
+            ai_msg = AIMessage(content=f"Tool execution failed: {error_str}")
             try:
                 chat_message = langchain_to_chat_message(ai_msg)
                 chat_message.run_id = str(run_id)
