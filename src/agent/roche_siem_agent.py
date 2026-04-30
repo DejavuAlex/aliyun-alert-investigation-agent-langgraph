@@ -192,7 +192,8 @@ class RocheSIEMAgent(LazyLoadingAgent):
 
         rag_local_tool = AgenticRAGSystem().get_local_rag_tool()
         # rag_raas_tool = AgenticRAGSystem().get_RAAS_rag_tool()
-
+        rag_flow_tool = AgenticRAGSystem().get_rag_flow_tool()
+        rag_flow_prompt_tool = AgenticRAGSystem().get_rag_flow_prompt_tool()
         # rag_tool_local = Tool(
         #     name="Roche_knowledge_base",
         #     description="第一个RAG库，搜索罗氏相关的基础信息，比如罗氏的阿里云出口IP，罗氏拥有的域名等，如果找不到，可以继续在其他知识库中搜索",
@@ -204,7 +205,7 @@ class RocheSIEMAgent(LazyLoadingAgent):
         #     func=rag_raas_tool
         # )
 
-        tools = mcp_tools + [rag_local_tool]
+        tools = mcp_tools + [rag_local_tool, rag_flow_tool, rag_flow_prompt_tool]
 
         self._debug_tools("MERGED", tools)
         self._check_tool_name(tools)

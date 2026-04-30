@@ -21,8 +21,9 @@ llm = ChatOpenAI(
     temperature=0,
     model=os.getenv("LLM_MODEL", "gpt-5-2025-08-07"),
     api_key=SecretStr(os.getenv("LLM_API_KEY")),
-    # api_key=SecretStr("Xw7VKR+e+ozUxbNbvnQxhsGYK2Jt"),
     base_url=os.getenv("LLM_BASE_URL"),
+    timeout=120.0,
+    max_retries=3,
     callbacks=[Prompt_Token_Use_Monitor_Callback(),LoggingCallbackHandler()]
 )
 

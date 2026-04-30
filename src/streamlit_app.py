@@ -273,8 +273,18 @@ async def draw_messages(
     streaming_placeholder = None
 
     # Iterate over the messages and draw them
-    while msg := await anext(messages_agen, None):
-        # str message represents an intermediate token being streamed
+    # while msg := await anext(messages_agen, None):
+    while True:
+        try:
+            msg = await anext(messages_agen)
+        except StopAsyncIteration:
+            # ---- STREAM ENDED NORMALLY ----
+            break
+        except Exception as e:
+            st.error(f"Streaming error: {e}")
+            break
+        # str message represents an intermediate token being
+        #  streamed
         if isinstance(msg, str):
             # If placeholder is empty, this is the first token of a new message
             # being streamed. We need to do setup.
@@ -352,7 +362,13 @@ async def draw_messages(
                             status = call_results[tool_call["id"]]
                             status.write("Input:")
                             status.write(tool_call["args"])
-                            tool_result: ChatMessage = await anext(messages_agen)
+                            try:
+                                tool_result: ChatMessage = await anext(messages_agen)
+                            except StopAsyncIteration:
+                                status.write("Output:")
+                                status.write("Stream ended before tool result was received.")
+                                status.update(state="complete")
+                                continue
 
                             if tool_result.type != "tool":
                                 st.error(f"Unexpected ChatMessage type: {tool_result.type}")
@@ -447,14 +463,24 @@ async def handle_sub_agent_msgs(messages_agen, status, is_new):
     nested_popovers = {}
 
     # looking for the transfer Success tool call message
-    first_msg = await anext(messages_agen)
+    try:
+        first_msg = await anext(messages_agen)
+    except StopAsyncIteration:
+        if status:
+            status.update(state="complete")
+        return
     if is_new:
         st.session_state.messages.append(first_msg)
 
     # Continue reading until we get an explicit handoff back
     while True:
         # Read next message
-        sub_msg = await anext(messages_agen)
+        try:
+            sub_msg = await anext(messages_agen)
+        except StopAsyncIteration:
+            if status:
+                status.update(state="complete")
+            break
 
         # this should only happen is skip_stream flag is removed
         # if isinstance(sub_msg, str):
@@ -480,7 +506,12 @@ async def handle_sub_agent_msgs(messages_agen, status, is_new):
             for tc in sub_msg.tool_calls:
                 if "transfer_back_to" in tc.get("name", ""):
                     # Read the corresponding tool result
-                    transfer_result = await anext(messages_agen)
+                    try:
+                        transfer_result = await anext(messages_agen)
+                    except StopAsyncIteration:
+                        if status:
+                            status.update(state="complete")
+                        return
                     if is_new:
                         st.session_state.messages.append(transfer_result)
 
